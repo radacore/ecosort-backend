@@ -11,13 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Drop foreign key constraints yang ada
-        Schema::table('catatan_sampahs', function (Blueprint $table) {
-            $table->dropForeign(['pengguna_id']);
-            $table->dropForeign(['divalidasi_oleh']);
-        });
-        
-        // Tambahkan kembali foreign key constraints dengan nama tabel yang benar
+        // Tambahkan foreign key constraints sekarang setelah tabel penggunas dibuat
         Schema::table('catatan_sampahs', function (Blueprint $table) {
             $table->foreign('pengguna_id')->references('id')->on('penggunas')->onDelete('cascade');
             $table->foreign('divalidasi_oleh')->references('id')->on('penggunas')->onDelete('set null');

@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('catatan_sampahs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pengguna_id')->constrained('penggunas')->onDelete('cascade');
-            $table->foreignId('rumah_tangga_id')->constrained('rumah_tanggas')->onDelete('cascade');
-            $table->foreignId('kecamatan_id')->constrained('kecamatans')->onDelete('cascade');
+            $table->unsignedBigInteger('pengguna_id');
+            $table->unsignedBigInteger('rumah_tangga_id');
+            $table->unsignedBigInteger('kecamatan_id');
             $table->string('jenis_terdeteksi')->nullable();
             $table->string('jenis_manual')->nullable();
             $table->decimal('volume_terdeteksi_liter', 8, 2)->nullable();
@@ -28,9 +28,6 @@ return new class extends Migration
             $table->unsignedBigInteger('divalidasi_oleh')->nullable();
             $table->integer('points_diberikan')->default(0);
             $table->timestamps();
-            
-            // Menambahkan foreign key untuk divalidasi_oleh
-            $table->foreign('divalidasi_oleh')->references('id')->on('penggunas')->onDelete('set null');
         });
     }
 

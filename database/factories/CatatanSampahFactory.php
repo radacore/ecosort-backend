@@ -50,19 +50,12 @@ class CatatanSampahFactory extends Factory
         return [
             'pengguna_id' => $pengguna->id,
             'kecamatan_id' => $pengguna->kecamatan_id,
-            'jenis_sampah_id' => $jenisSampah->id,
             'jenis_terdeteksi' => $jenisSampah->nama,
-            'jenis_manual' => $this->faker->optional()->randomElement(['Organik', 'Plastik', 'Kertas', 'Logam', 'Residu']),
             'volume_terdeteksi_liter' => $volume,
-            'volume_manual_liter' => $this->faker->optional()->randomFloat(2, 0.1, 10),
-            'volume_final_liter' => $volume,
             'berat_kg' => $berat,
             'foto_path' => $this->faker->optional()->imageUrl(),
             'waktu_setoran' => $this->faker->dateTimeThisMonth(),
             'is_divalidasi' => $this->faker->boolean(70), // 70% divalidasi
-            'divalidasi_oleh' => $this->faker->optional()->randomElement(
-                Pengguna::where('role', 'admin')->orWhere('role', 'peneliti')->pluck('id')->toArray()
-            ),
             'points_diberikan' => $this->faker->numberBetween(5, 50),
         ];
     }

@@ -37,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('EcoSort')
             ->darkMode(false)
             ->assets([
-                \Filament\Support\Assets\Css::make('ecosort-styles', __DIR__.'/../../public/css/ecosort.css'),
+                \Filament\Support\Assets\Css::make('ecosort-styles', public_path('css/ecosort.css')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
