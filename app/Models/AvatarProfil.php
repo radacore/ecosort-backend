@@ -12,6 +12,7 @@ class AvatarProfil extends Model
     protected $table = 'avatar_profil';
 
     protected $fillable = [
+        'nama',
         'path',
     ];
 

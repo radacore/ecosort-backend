@@ -90,6 +90,7 @@ class AvatarProfilController extends Controller
         
         // Buat entri avatar profil kustom
         $avatarProfil = AvatarProfil::create([
+            'nama' => $pengguna->nama,
             'path' => $path,
         ]);
         
