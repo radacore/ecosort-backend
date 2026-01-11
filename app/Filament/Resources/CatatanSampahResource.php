@@ -200,6 +200,7 @@ class CatatanSampahResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('created_at', 'desc')
             ->modifyQueryUsing(function (Builder $query) {
                 // Filter data berdasarkan role pengguna
                 if (auth()->check() && auth()->user()->role === 'peneliti') {
