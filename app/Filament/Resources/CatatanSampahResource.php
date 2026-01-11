@@ -181,15 +181,6 @@ class CatatanSampahResource extends Resource
                     ->label('Berat (kg)')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('foto_path')
-                    ->label('Foto')
-                    ->formatStateUsing(function($record) {
-                        if ($record->foto_path) {
-                            return view('filament.tables.image-preview', ['path' => $record->foto_path]);
-                        }
-                        return 'Tidak ada foto';
-                    })
-                    ->html(),
                 
                 Tables\Columns\TextColumn::make('waktu_setoran')
                     ->label('Waktu Setor')
