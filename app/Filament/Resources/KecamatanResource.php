@@ -37,7 +37,7 @@ class KecamatanResource extends Resource
         return auth()->check() && auth()->user()->role === 'admin';
     }
     
-    public static function canView(\Illuminate\Database\Eloquent\Model $record = null): bool
+    public static function canView(?\Illuminate\Database\Eloquent\Model $record = null): bool
     {
         // Log untuk debugging
         if (auth()->check()) {

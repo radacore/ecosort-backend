@@ -35,7 +35,7 @@ class CatatanSampahResource extends Resource
         return auth()->check() && in_array(auth()->user()->role, ['admin', 'peneliti']);
     }
     
-    public static function canView(\Illuminate\Database\Eloquent\Model $record = null): bool
+    public static function canView(?\Illuminate\Database\Eloquent\Model $record = null): bool
     {
         // Hanya admin dan peneliti yang bisa mengakses resource ini
         return auth()->check() && in_array(auth()->user()->role, ['admin', 'peneliti']);
