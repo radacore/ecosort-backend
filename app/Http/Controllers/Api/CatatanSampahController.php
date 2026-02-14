@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\CatatanSampah;
+use App\Models\Pengguna;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -29,8 +30,6 @@ class CatatanSampahController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            \Log::info('CatatanSampahController@store called', ['request_data' => $request->all()]);
-            
             // Validasi input dasar
             $validator = Validator::make($request->all(), [
                 'pengguna_id' => 'required|exists:penggunas,id',
@@ -38,12 +37,11 @@ class CatatanSampahController extends Controller
                 'jenis_terdeteksi' => 'required|string|max:255',
                 'volume_terdeteksi_liter' => 'required|numeric|min:0',
                 'berat_kg' => 'required|numeric|min:0',
-                'foto' => 'required|file|image|mimes:jpeg,png,jpg,gif|max:10240', // Validasi file upload
+                'foto' => 'required|file|image|mimes:jpeg,png,jpg,gif|max:10240',
                 'waktu_setoran' => 'nullable|date'
             ]);
 
             if ($validator->fails()) {
-                \Log::warning('Validation failed', ['errors' => $validator->errors()->toArray()]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Validasi gagal',
@@ -51,21 +49,11 @@ class CatatanSampahController extends Controller
                 ], 422);
             }
 
-            \Log::info('Validation passed, processing file upload');
-
             // Upload file ke folder storage/app/public/sampah-foto
             if ($request->hasFile('foto')) {
                 $file = $request->file('foto');
                 
-                \Log::info('File received', [
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_size' => $file->getSize(),
-                    'file_mime' => $file->getMimeType()
-                ]);
-                
-                // Cek apakah file valid
                 if (!$file->isValid()) {
-                    \Log::error('File upload not valid', ['error' => $file->getError()]);
                     return response()->json([
                         'success' => false,
                         'message' => 'File foto tidak valid'
@@ -74,34 +62,22 @@ class CatatanSampahController extends Controller
                 
                 // Buat direktori jika belum ada
                 \Storage::makeDirectory('public/sampah-foto');
-                \Log::info('Directory created or already exists', ['directory' => 'storage/app/public/sampah-foto']);
                 
                 // Generate nama file unik
                 $fileName = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
                 
                 // Simpan file ke storage/app/public/sampah-foto menggunakan disk 'public'
                 $path = $file->storeAs('sampah-foto', $fileName, 'public');
-                \Log::info('File stored with path', ['path' => $path]);
                 
-                // Cek apakah file benar-benar disimpan
                 $fullPath = storage_path('app/public/' . $path);
-                \Log::info('Checking file existence', ['full_path' => $fullPath]);
-                
                 if (!file_exists($fullPath)) {
-                    \Log::error('File was not saved to expected location', [
-                        'path' => $fullPath,
-                        'directory_exists' => is_dir(dirname($fullPath)),
-                        'directory_readable' => is_readable(dirname($fullPath)),
-                        'directory_writable' => is_writable(dirname($fullPath))
-                    ]);
                     return response()->json([
                         'success' => false,
                         'message' => 'Gagal menyimpan file foto'
                     ], 500);
                 }
                 
-                $fotoPath = 'storage/' . $path; // Path yang akan disimpan ke database
-                \Log::info('File saved successfully', ['path' => $fotoPath, 'full_path' => $fullPath]);
+                $fotoPath = 'storage/' . $path;
             } else {
                 return response()->json([
                     'success' => false,
@@ -109,7 +85,8 @@ class CatatanSampahController extends Controller
                 ], 422);
             }
 
-            \Log::info('File uploaded successfully', ['path' => $fotoPath]);
+            // Hitung poin berdasarkan jenis sampah dan volume
+            $points = $this->hitungPoin($request->jenis_terdeteksi, $request->volume_terdeteksi_liter);
             
             $data = [
                 'pengguna_id' => $request->pengguna_id,
@@ -117,37 +94,39 @@ class CatatanSampahController extends Controller
                 'jenis_terdeteksi' => $request->jenis_terdeteksi,
                 'volume_terdeteksi_liter' => $request->volume_terdeteksi_liter,
                 'berat_kg' => $request->berat_kg,
-                'foto_path' => $fotoPath, // Simpan path yang sudah disimpan
-                'is_divalidasi' => 0, // Default value
-                'points_diberikan' => 0, // Default value
+                'foto_path' => $fotoPath,
+                'is_divalidasi' => 0,
+                'points_diberikan' => $points,
                 'waktu_setoran' => $request->waktu_setoran ?? now()
             ];
             
             $catatanSampah = CatatanSampah::create($data);
             
-            \Log::info('Catatan sampah created successfully', ['id' => $catatanSampah->id, 'data' => $data]);
+            // Update poin dan streak pengguna
+            $pengguna = Pengguna::find($request->pengguna_id);
+            if ($pengguna) {
+                $pengguna->increment('points', $points);
+                $pengguna->update([
+                    'streak_days' => $this->hitungStreakHari($pengguna),
+                    'last_scan_at' => now()
+                ]);
+            }
 
-            $response = response()->json([
+            return response()->json([
                 'success' => true,
                 'message' => 'Catatan sampah berhasil ditambahkan',
-                'data' => $catatanSampah
+                'data' => $catatanSampah,
+                'points_ditambahkan' => $points,
+                'total_points' => $pengguna ? $pengguna->fresh()->points : 0,
+                'streak_days' => $pengguna ? $pengguna->fresh()->streak_days : 0
             ], 201);
             
-            \Log::info('Response prepared, sending');
-            
-            return $response;
-            
         } catch (\Exception $e) {
-            \Log::error('Error creating catatan sampah: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
-            ]);
+            \Log::error('Error creating catatan sampah: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menyimpan data',
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -248,6 +227,15 @@ class CatatanSampahController extends Controller
      */
     public function validateCatatan(Request $request, string $id): JsonResponse
     {
+        // Cek apakah user memiliki role admin atau peneliti
+        $user = auth()->user();
+        if (!$user || !in_array($user->role ?? '', ['admin', 'peneliti'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk memvalidasi'
+            ], 403);
+        }
+        
         $catatanSampah = CatatanSampah::find($id);
 
         if (!$catatanSampah) {
@@ -273,7 +261,6 @@ class CatatanSampahController extends Controller
         $catatanSampah->update([
             'is_divalidasi' => $request->is_divalidasi,
             'points_diberikan' => $request->points_diberikan,
-            'divalidasi_oleh' => auth()->id() // Set current user as validator
         ]);
 
         return response()->json([
@@ -378,5 +365,41 @@ class CatatanSampahController extends Controller
             'message' => 'Riwayat setoran ditemukan',
             'data' => $riwayat,
         ]);
+    }
+    
+    /**
+     * Hitung poin berdasarkan jenis sampah dan volume.
+     */
+    private function hitungPoin(string $jenisSampah, float $volumeLiter): int
+    {
+        $pointPerLiter = [
+            'Organik' => 10,
+            'Plastik' => 15,
+            'Kertas' => 12,
+            'Logam' => 20,
+            'Residu' => 5,
+        ];
+
+        $basePoints = $pointPerLiter[$jenisSampah] ?? 5;
+        return (int) round($basePoints * $volumeLiter);
+    }
+
+    /**
+     * Hitung streak hari berdasarkan tanggal terakhir setor.
+     */
+    private function hitungStreakHari(Pengguna $pengguna): int
+    {
+        $hariIni = now()->toDateString();
+        $terakhirSetor = $pengguna->last_scan_at ? $pengguna->last_scan_at->toDateString() : null;
+
+        if (!$terakhirSetor || $terakhirSetor !== $hariIni) {
+            $kemarin = now()->subDay()->toDateString();
+            if ($terakhirSetor === $kemarin) {
+                return ($pengguna->streak_days ?? 0) + 1;
+            }
+            return 1;
+        }
+
+        return $pengguna->streak_days ?? 1;
     }
 }
