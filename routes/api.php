@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\KecamatanController;
 use App\Http\Controllers\Api\AvatarProfilController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\ScoreboardController;
+use App\Http\Controllers\Api\PanduanController;
 
 // Autentikasi
 Route::post('/login', [AuthController::class, 'login']);
@@ -60,3 +61,6 @@ Route::post('/ml/predict', [MlController::class, 'predict']);
 // Berita publik
 Route::get('/berita', [NewsController::class, 'index']);
 Route::get('/berita/{slug}', [NewsController::class, 'show']);
+
+// Panduan publik
+Route::get('/panduan', [PanduanController::class, 'index']);

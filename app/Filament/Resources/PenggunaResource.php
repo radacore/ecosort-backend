@@ -79,11 +79,13 @@ class PenggunaResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('nama')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->disabledOn('edit'),
                         Forms\Components\TextInput::make('email')
                             ->email()
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->disabledOn('edit'),
                         Forms\Components\TextInput::make('password')
                             ->password()
                             ->required()
@@ -107,24 +109,29 @@ class PenggunaResource extends Resource
                                 'admin' => 'Admin',
                             ])
                             ->required()
-                            ->native(false),
+                            ->native(false)
+                            ->disabledOn('edit'),
                         Forms\Components\Textarea::make('alamat')
                             ->label('Alamat')
                             ->rows(3)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->disabledOn('edit'),
                         Forms\Components\Select::make('kecamatan_id')
                             ->label('Kecamatan')
                             ->relationship('kecamatan', 'nama')
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->disabledOn('edit'),
                         Forms\Components\TextInput::make('points')
                             ->required()
                             ->integer()
-                            ->default(0),
+                            ->default(0)
+                            ->disabledOn('edit'),
                         Forms\Components\TextInput::make('streak_days')
                             ->required()
                             ->integer()
-                            ->default(0),
+                            ->default(0)
+                            ->disabledOn('edit'),
                     ])
                     ->columns(2),
             ]);
@@ -142,34 +149,16 @@ class PenggunaResource extends Resource
                     ->label('Email')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('role')
-                    ->label('Role')
+                Tables\Columns\TextColumn::make('alamat')
+                    ->label('Alamat')
                     ->searchable()
                     ->sortable()
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'admin' => 'success',
-                        'peneliti' => 'warning',
-                        'user' => 'info',
-                        default => 'gray',
-                    }),
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('kecamatan.nama')
                     ->label('Kecamatan')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('points')
-                    ->label('Points')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('streak_days')
-                    ->label('Streak Days')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Diperbarui')
                     ->dateTime()
